@@ -136,7 +136,7 @@
   } else {
     isPresentationVC = YES;
     if ([self.presentingViewController isKindOfClass:[UINavigationController class]]) {
-        [self.presentingViewController pushViewController:authorizationViewController animated:YES];
+        [(UINavigationController*)self.presentingViewController pushViewController:authorizationViewController animated:YES];
     } else {
         if (nil != self.presentingViewController.navigationController) {
             [self.presentingViewController.navigationController pushViewController:authorizationViewController animated:YES];
@@ -144,6 +144,7 @@
             [self.presentingViewController presentViewController:authorizationViewController animated:YES completion:nil];
         }
     }
+  }
 }
 
 - (void)hideAuthenticateView {
@@ -152,7 +153,7 @@
   } else {
     if (self.presentingViewController) {
         if ([self.presentingViewController isKindOfClass:[UINavigationController class]]) {
-            [self.presentingViewController popViewControllerAnimated:YES];
+            [(UINavigationController*)self.presentingViewController popViewControllerAnimated:YES];
         } else {
             if (nil != self.presentingViewController.navigationController) {
                 [self.presentingViewController.navigationController popViewControllerAnimated:YES];
