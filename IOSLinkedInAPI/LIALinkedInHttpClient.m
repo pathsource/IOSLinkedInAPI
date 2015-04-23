@@ -28,6 +28,9 @@
 #define LINKEDIN_CREATION_KEY       @"linkedin_token_created_at"
 
 @interface LIALinkedInHttpClient ()
+{
+  BOOL isPresentationVC;
+}
 @property(nonatomic, strong) LIALinkedInApplication *application;
 @property(nonatomic, weak) UIViewController *presentingViewController;
 @end
@@ -93,44 +96,72 @@
 }
 
 - (void)getAuthorizationCode:(void (^)(NSString *))success cancel:(void (^)(void))cancel failure:(void (^)(NSError *))failure {
-  LIALinkedInAuthorizationViewController *authorizationViewController = [[LIALinkedInAuthorizationViewController alloc]
-      initWithApplication:
-          self.application
-                  success:^(NSString *code) {
-                    [self hideAuthenticateView];
-                    if (success) {
-                      success(code);
-                    }
-                  }
-                   cancel:^{
-                     [self hideAuthenticateView];
-                     if (cancel) {
-                       cancel();
-                     }
-                   } failure:^(NSError *error) {
-        [self hideAuthenticateView];
-        if (failure) {
-          failure(error);
+  __weak typeof(self) weakSelf = self;
+  __block LIALinkedInAuthorizationViewController *authorizationViewController = [[LIALinkedInAuthorizationViewController alloc]
+      initWithApplication: self.application
+        success:^(NSString *code) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf) {
+                [strongSelf hideAuthenticateView];
+            }
+            if (success) success(code);
         }
-      }];
+        cancel:^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf) {
+                [strongSelf hideAuthenticateView];
+            }
+            if (cancel) cancel();
+        } failure:^(NSError *error) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf) {
+                [strongSelf hideAuthenticateView];
+            }
+            if (failure) failure(error);
+        }];
   [self showAuthorizationView:authorizationViewController];
 }
 
 - (void)showAuthorizationView:(LIALinkedInAuthorizationViewController *)authorizationViewController {
-  if (self.presentingViewController == nil)
+  if (self.presentingViewController == nil) {
+    isPresentationVC = NO;
     self.presentingViewController = [[UIApplication sharedApplication] keyWindow].rootViewController;
 
-  UINavigationController *nc = [[UINavigationController alloc] initWithRootViewController:authorizationViewController];
-
-  if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-    nc.modalPresentationStyle = UIModalPresentationFormSheet;
-  }
-
-  [self.presentingViewController presentViewController:nc animated:YES completion:nil];
+    UINavigationController *nc = [[UINavigationController alloc] initWithRootViewController:authorizationViewController];
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+        nc.modalPresentationStyle = UIModalPresentationFormSheet;
+    }
+    
+    [self.presentingViewController presentViewController:nc animated:YES completion:nil];
+  } else {
+    isPresentationVC = YES;
+    if ([self.presentingViewController isKindOfClass:[UINavigationController class]]) {
+        [self.presentingViewController pushViewController:authorizationViewController animated:YES];
+    } else {
+        if (nil != self.presentingViewController.navigationController) {
+            [self.presentingViewController.navigationController pushViewController:authorizationViewController animated:YES];
+        } else {
+            [self.presentingViewController presentViewController:authorizationViewController animated:YES completion:nil];
+        }
+    }
 }
 
 - (void)hideAuthenticateView {
-  [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
+  if (!isPresentationVC) {
+    [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
+  } else {
+    if (self.presentingViewController) {
+        if ([self.presentingViewController isKindOfClass:[UINavigationController class]]) {
+            [self.presentingViewController popViewControllerAnimated:YES];
+        } else {
+            if (nil != self.presentingViewController.navigationController) {
+                [self.presentingViewController.navigationController popViewControllerAnimated:YES];
+            } else {
+                [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
+            }
+        }
+    }
+  }
 }
 
 
