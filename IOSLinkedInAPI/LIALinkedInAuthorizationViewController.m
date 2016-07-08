@@ -95,7 +95,8 @@ BOOL handlingRedirectURL;
 @implementation LIALinkedInAuthorizationViewController (UIWebViewDelegate)
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
-    NSString *url = [[request URL] absoluteString];
+    NSURL *requestURL = [request URL];
+    NSString *url = [requestURL absoluteString];
 
     //prevent loading URL if it is the redirectURL
     handlingRedirectURL = [url hasPrefix:self.application.redirectURL];
@@ -110,11 +111,11 @@ BOOL handlingRedirectURL;
                 self.failureCallback(error);
             }
         } else {
-            NSString *receivedState = [self extractGetParameter:@"state" fromURLString: url];
+            NSString *receivedState = [self extractGetParameter:@"state" fromURL:requestURL];
             //assert that the state is as we expected it to be
             if ([self.application.state isEqualToString:receivedState]) {
                 //extract the code from the url
-                NSString *authorizationCode = [self extractGetParameter:@"code" fromURLString: url];
+                NSString *authorizationCode = [self extractGetParameter:@"code" fromURL:requestURL];
                 self.successCallback(authorizationCode);
             } else {
                 NSError *error = [[NSError alloc] initWithDomain:kLinkedInErrorDomain code:2 userInfo:[[NSMutableDictionary alloc] init]];
@@ -125,9 +126,9 @@ BOOL handlingRedirectURL;
     return !handlingRedirectURL;
 }
 
-- (NSString *)extractGetParameter: (NSString *) parameterName fromURLString:(NSString *)urlString {
+- (NSString *)extractGetParameter: (NSString *) parameterName fromURL:(NSURL *)url {
     NSMutableDictionary *mdQueryStrings = [[NSMutableDictionary alloc] init];
-    urlString = [[urlString componentsSeparatedByString:@"?"] objectAtIndex:1];
+    NSString *urlString = url.query;
     for (NSString *qs in [urlString componentsSeparatedByString:@"&"]) {
         [mdQueryStrings setValue:[[[[qs componentsSeparatedByString:@"="] objectAtIndex:1]
                 stringByReplacingOccurrencesOfString:@"+" withString:@" "]
